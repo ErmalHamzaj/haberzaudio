@@ -1,0 +1,38 @@
+name: Generate Bülten Audio
+
+on:
+  schedule:
+    - cron: '0 6 * * *'    # 09:00 Istanbul time (UTC+3)
+    - cron: '0 14 * * *'   # 17:00 Istanbul time (UTC+3)
+  workflow_dispatch:       # Allow manual trigger
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Generate audio
+        run: python scripts/generate_bulten.py
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      # Deploys audio-output/ to gh-pages branch, keeping previously deployed files
+      # so morning + evening files coexist on the branch.
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./audio-output
+          keep_files: true
+          destination_dir: .
+          commit_message: "Update bülten audio [skip ci]"
